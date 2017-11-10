@@ -1,7 +1,7 @@
 Particle Circle
 ===============
 
-classes, (arguments to accept):
+Classes, (arguments to accept):
 - Vec2 (x, y) - Abstract class for Vector
 
 - World (canvas) - Main class for frame, methods:
