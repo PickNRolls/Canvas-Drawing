@@ -57,10 +57,10 @@
     }
 
     update() {
-      var j, len, object, ref, results;
+      var j, len1, object, ref, results;
       ref = this._objects;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
+      for (j = 0, len1 = ref.length; j < len1; j++) {
         object = ref[j];
         results.push(object.update());
       }
@@ -68,12 +68,12 @@
     }
 
     draw() {
-      var j, len, object, ref, results;
-      this.ctx.fillStyle = 'rgba(255, 255, 255, .07)';
+      var j, len1, object, ref, results;
+      this.ctx.fillStyle = 'rgba(0,0,0,.07)';
       this.ctx.fillRect(0, 0, this._canvasWidth, this._canvasHeight);
       ref = this._objects;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
+      for (j = 0, len1 = ref.length; j < len1; j++) {
         object = ref[j];
         results.push(object.draw());
       }
@@ -111,7 +111,8 @@
       // Events #
       //#########
       this.move = this.move.bind(this);
-      this.randomColors = (ref = config.randomColors) != null ? ref : ['#222831', '#393e46', '#f96d00', '#fff1c5', '#f2f2f2'];
+      this.wheel = this.wheel.bind(this);
+      this.randomColors = (ref = config.randomColors) != null ? ref : ['#2C3E50', '#FC4349', '#D7DADB', '#6DBCDB', '#FFFFFF'];
       this._color = (ref1 = config.color) != null ? ref1 : '#fff';
       this._velocity = (ref2 = config.velocity) != null ? ref2 : .02;
       this._particleAmount = (ref3 = config.particleAmount) != null ? ref3 : 6;
@@ -130,7 +131,8 @@
           velocity: this._velocity
         }, i);
       }
-      return this.world.canvas.addEventListener('mousemove', this.move);
+      this.world.canvas.addEventListener('mousemove', this.move);
+      return this.world.canvas.addEventListener('wheel', this.wheel);
     }
 
     addParticle(config, ind) {
@@ -139,35 +141,77 @@
     }
 
     update() {
-      var j, len, particle, ref, results;
+      var j, len1, particle, ref, results;
       ref = this._particles;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
+      for (j = 0, len1 = ref.length; j < len1; j++) {
         particle = ref[j];
-        results.push(particle.update());
+        if (particle.updateble) {
+          results.push(particle.update());
+        }
       }
       return results;
     }
 
     draw() {
-      var j, len, particle, ref, results;
+      var j, len1, particle, ref, results;
       ref = this._particles;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
+      for (j = 0, len1 = ref.length; j < len1; j++) {
         particle = ref[j];
-        results.push(particle.draw());
+        if (particle.updateble) {
+          results.push(particle.draw());
+        }
       }
       return results;
     }
 
     move(e) {
-      var j, len, particle, ref, results;
+      var j, len1, particle, ref, results;
       boundMethodCheck(this, ParticleCircle);
       ref = this._particles;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
+      for (j = 0, len1 = ref.length; j < len1; j++) {
         particle = ref[j];
         results.push(particle.move(e));
+      }
+      return results;
+    }
+
+    wheel(e) {
+      var found, j, len, len1, particle, ref, results;
+      boundMethodCheck(this, ParticleCircle);
+      found = false;
+      len = this._particles.length - 1;
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY > 0) {
+          while (!found && this._particles[len]) {
+            if (this._particles[len].updateble) {
+              this._particles[len].updateble = false;
+              found = true;
+            } else {
+              len--;
+            }
+          }
+          return;
+        }
+        len = 0;
+        while (!found && this._particles[len]) {
+          if (this._particles[len].updateble) {
+            len++;
+          } else {
+            this._particles[len].updateble = true;
+            found = true;
+          }
+        }
+        return;
+      }
+      ref = this._particles;
+      results = [];
+      for (j = 0, len1 = ref.length; j < len1; j++) {
+        particle = ref[j];
+        results.push(particle.wheel(e));
       }
       return results;
     }
@@ -177,6 +221,7 @@
   Particle = class Particle extends _Object {
     constructor(config, ind) {
       super(config);
+      this.updateble = true;
       this.particleCircle = config.particleCircle;
       this.world = this.particleCircle.world;
       this._radius = config.radius;
@@ -188,6 +233,9 @@
       } else {
         this._color = config.color;
       }
+      //#########
+      // Events #
+      //#########
       this._initLoc = config.loc.copy();
       this._lastLoc = new Vec2;
       this._mouseLoc = config.loc.copy();
@@ -224,6 +272,14 @@
       return this._initLoc.y = this._mouseLoc.y;
     }
 
+    wheel(e) {
+      if (e.deltaY < 0) {
+        return this._velocity += 0.01;
+      } else {
+        return this._velocity -= 0.01;
+      }
+    }
+
   };
 
   world = new World(document.getElementById('canvas'));
@@ -231,7 +287,7 @@
   world.addObject(ParticleCircle, {
     loc: new Vec2(300, 300),
     color: 'random',
-    particleAmount: 160,
+    particleAmount: 150,
     particleRadius: 2,
     velocity: 4
   });

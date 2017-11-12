@@ -45,7 +45,7 @@ class World
     do object.update for object in @_objects
 
   draw: ->
-    @ctx.fillStyle = 'rgba(255, 255, 255, .07)'
+    @ctx.fillStyle = 'rgba(0,0,0,.07)'
     @ctx.fillRect 0, 0, @_canvasWidth, @_canvasHeight
     do object.draw for object in @_objects
 
@@ -67,11 +67,11 @@ class ParticleCircle extends _Object
   constructor: (config) ->
     super config
     @randomColors = config.randomColors ? [
-      '#222831'
-      '#393e46'
-      '#f96d00'
-      '#fff1c5'
-      '#f2f2f2']
+      '#2C3E50'
+      '#FC4349'
+      '#D7DADB'
+      '#6DBCDB'
+      '#FFFFFF']
     @_color = config.color ? '#fff'
     @_velocity = config.velocity ? .02
     @_particleAmount = config.particleAmount ? 6
@@ -91,16 +91,17 @@ class ParticleCircle extends _Object
       }, i
 
     @world.canvas.addEventListener 'mousemove', @move
+    @world.canvas.addEventListener 'wheel', @wheel
 
   addParticle: (config, ind) ->
     config.particleCircle = @
     @_particles.push new Particle config, ind
 
   update: ->
-    do particle.update for particle in @_particles
+    do particle.update for particle in @_particles when particle.updateble
 
   draw: ->
-    do particle.draw for particle in @_particles
+    do particle.draw for particle in @_particles when particle.updateble
 
   ##########
   # Events #
@@ -109,9 +110,35 @@ class ParticleCircle extends _Object
   move: (e) =>
     particle.move e for particle in @_particles
 
+  wheel: (e) =>
+    found = no
+    len = @_particles.length - 1
+    if e.ctrlKey
+      do e.preventDefault
+      if e.deltaY > 0
+        while not found and @_particles[len]
+          if @_particles[len].updateble
+            @_particles[len].updateble = no
+            found = on
+          else len--
+        return
+
+      len = 0
+      while not found and @_particles[len]
+        if @_particles[len].updateble then len++
+        else
+          @_particles[len].updateble = on
+          found = on
+      return
+
+
+    particle.wheel e for particle in @_particles
+
 class Particle extends _Object
   constructor: (config, ind) ->
     super config
+    @updateble = on
+
     @particleCircle = config.particleCircle
     @world = @particleCircle.world
     @_radius = config.radius
@@ -123,11 +150,16 @@ class Particle extends _Object
     else
       @_color = config.color
 
+    ##########
+    # Events #
+    ##########
+
     @_initLoc = do config.loc.copy
     @_lastLoc = new Vec2
 
     @_mouseLoc = do config.loc.copy
     @_lastMouseLoc = do config.loc.copy
+
 
   update: ->
     @_lastLoc.x = @_loc.x
@@ -162,13 +194,17 @@ class Particle extends _Object
     @_initLoc.x = @_mouseLoc.x
     @_initLoc.y = @_mouseLoc.y
 
+  wheel: (e) ->
+    if e.deltaY < 0 then @_velocity += 0.01
+    else @_velocity -= 0.01
+
 
 
 world = new World document.getElementById 'canvas'
 world.addObject ParticleCircle, {
   loc: new Vec2 300, 300
   color: 'random'
-  particleAmount: 160
+  particleAmount: 150
   particleRadius: 2
   velocity: 4
 }
